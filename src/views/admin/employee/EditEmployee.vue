@@ -2,12 +2,6 @@
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import Label from "@/components/ui/label/Label.vue";
-import Select from "@/components/ui/select/Select.vue";
-import SelectContent from "@/components/ui/select/SelectContent.vue";
-import SelectGroup from "@/components/ui/select/SelectGroup.vue";
-import SelectItem from "@/components/ui/select/SelectItem.vue";
-import SelectTrigger from "@/components/ui/select/SelectTrigger.vue";
-import SelectValue from "@/components/ui/select/SelectValue.vue";
 import Textarea from "@/components/ui/textarea/Textarea.vue";
 import router from "@/router";
 import { useAuthStore } from "@/stores/auth";
@@ -16,8 +10,15 @@ import type { breadcrumbItem } from "@/types/breadcrumb";
 import DashboardLayout from "@/views/layouts/DashboardLayout.vue";
 import axios from "axios";
 import { Loader } from "lucide-vue-next";
-import Swal from "sweetalert2";
 import { onMounted, ref } from "vue";
+import Select from "@/components/ui/select/Select.vue";
+import SelectContent from "@/components/ui/select/SelectContent.vue";
+import SelectGroup from "@/components/ui/select/SelectGroup.vue";
+import SelectItem from "@/components/ui/select/SelectItem.vue";
+import SelectTrigger from "@/components/ui/select/SelectTrigger.vue";
+import SelectValue from "@/components/ui/select/SelectValue.vue";
+import type { EmployeeType } from "@/types/user";
+import Swal from "sweetalert2";
 
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -25,10 +26,11 @@ const breadcrumbs: breadcrumbItem[] = [
     href: "/admin/employees",
   },
   {
-    name: "Create Employee",
-    href: "/admin/employees/create",
+    name: "Edit Employee",
+    href: `/admin/employees/${router.currentRoute.value.params.id}/edit`,
   },
 ];
+
 const authStore = useAuthStore();
 const departments = ref<Department[] | null>(null);
 const selectedDepartment = ref<number | null>(null);
@@ -47,8 +49,36 @@ function getDepartments() {
       console.error("Error fetching departments:", error);
     });
 }
+
+const employee_id = router.currentRoute.value.params.id;
+function getDetailEmployee(id: number) {
+  axios
+    .get(`${authStore.apiUrl}/employees/${id}`, {
+      headers: {
+        Authorization: `Bearer ${authStore.getToken}`,
+      },
+    })
+    .then((response) => {
+      const employee: EmployeeType = response.data.employee;
+
+      full_name.value = employee.full_name;
+      phone.value = employee.phone;
+      address.value = employee.address;
+      gender.value = employee.gender;
+      date_of_birth.value = employee.date_of_birth;
+      position.value = employee.position;
+      hire_date.value = employee.hire_date;
+      currentAvatarUrl.value = employee.avatar;
+      selectedDepartment.value = employee.department?.id ?? null;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
 onMounted(() => {
   getDepartments();
+  getDetailEmployee(Number(employee_id));
 });
 
 const full_name = ref("");
@@ -57,9 +87,10 @@ const address = ref("");
 const gender = ref("");
 const date_of_birth = ref("");
 const position = ref("");
-const hire_date = ref("");
 const avatar = ref<File | null>(null);
+const hire_date = ref("");
 const avatarPreview = ref<string | null>(null);
+const currentAvatarUrl = ref<string | null>(null);
 function onAvatarChange(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
@@ -69,66 +100,80 @@ function onAvatarChange(event: Event) {
     avatar.value = null;
   }
 }
-const auth = useAuthStore();
 
 const formeErrors = ref<Record<string, string[]> | null>(null);
 const buttonLoading = ref(false);
-function createEmployee() {
-  buttonLoading.value = true;
 
-  axios
-    .post(
-      `${auth.apiUrl}/employees`,
-      {
-        full_name: full_name.value,
-        phone: phone.value,
-        address: address.value,
-        avatar: avatar.value,
-        date_of_birth: date_of_birth.value,
-        hire_date: hire_date.value,
-        gender: gender.value,
-        position: position.value,
-        department_id: selectedDepartment.value,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    )
-    .then((response) => {
-      console.log(response.data);
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Employee created successfully",
-        timer: 1200,
-        showConfirmButton: false,
-      });
+function updateEmployee() {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "You are want to update employee!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Update!",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      buttonLoading.value = true;
 
-      router.push({ name: "employees-list" });
-    })
-    .catch((error) => {
-      console.error("Error creating employee:", error);
-      if (error.response && error.response.status === 422) {
-        formeErrors.value = error.response.data.errors;
-      }
-    })
-    .finally(() => {
-      buttonLoading.value = false;
-    });
+      axios
+        .post(
+          `${authStore.apiUrl}/employees/${employee_id}`,
+          {
+            full_name: full_name.value,
+            phone: phone.value,
+            address: address.value,
+            avatar: avatar.value,
+            date_of_birth: date_of_birth.value,
+            hire_date: hire_date.value,
+            gender: gender.value,
+            position: position.value,
+            department_id: selectedDepartment.value,
+            _method: "put",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.getToken}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        )
+        .then((response) => {
+          console.log(response.data);
+
+          Swal.fire({
+            title: "Updated!",
+            text: "Employee has been updated.",
+            icon: "success",
+            timer: 1200,
+            timerProgressBar: true,
+            showCancelButton: false,
+          });
+
+          router.push({ name: "employees-list" });
+        })
+        .catch((error) => {
+          console.log(error);
+        })
+        .finally(() => {
+          buttonLoading.value = false;
+        });
+    }
+  });
 }
+
+const imageUrl = "http://localhost:8000/storage/";
 </script>
 
 <template>
   <DashboardLayout
     :breadcrumbs="breadcrumbs"
-    heading="Create Employee"
-    subheading="Add a new employee to the system"
+    heading="Edit Employee"
+    subheading="Edit Employee here"
   >
     <section clas="w-full">
-      <form @submit.prevent="createEmployee" enctype="multipart/form-data">
+      <form @submit.prevent="updateEmployee()" v-if="full_name" enctype="multipart/form-data">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div class="space-y-2">
             <Label for="fullname">Full Name</Label>
@@ -143,9 +188,9 @@ function createEmployee() {
               class="border rounded-md md:w-28 md:h-28 w-24 h-24 flex items-center justify-center"
             >
               <img
-                :src="avatarPreview ? avatarPreview : ''"
+                :src="avatarPreview ? avatarPreview : imageUrl + currentAvatarUrl"
                 alt=""
-                class="object-center object-cover"
+                class="object-cover w-full h-full"
               />
             </div>
           </div>
@@ -216,6 +261,12 @@ function createEmployee() {
           >
         </div>
       </form>
+
+      <!-- if data not loaded -->
+      <div v-else class="flex justify-center items-center gap-x-2">
+        <Loader class="spin animate-spin" />
+        <p>Loading Data...</p>
+      </div>
     </section>
   </DashboardLayout>
 </template>
