@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import Textarea from "@/components/ui/textarea/Textarea.vue";
+import type { Department } from "@/types";
 
 const authStore = useAuthStore();
 const breadcrumbs = [
@@ -32,14 +33,6 @@ const breadcrumbs = [
     href: "/admin/departments",
   },
 ];
-
-type Department = {
-  id: number;
-  name: string;
-  description: string;
-  count: number;
-  created_at: string;
-};
 
 const departments = ref<Department[] | null>(null);
 function getDepartments() {
