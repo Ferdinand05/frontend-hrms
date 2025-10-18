@@ -23,12 +23,12 @@ const props = defineProps<{
     <SidebarGroupContent>
       <SidebarMenu>
         <SidebarMenuItem v-for="item in props.items" :key="item.title">
-          <SidebarMenuButton asChild>
-            <RouterLink :to="item.url">
+          <RouterLink :to="item.url">
+            <SidebarMenuButton>
               <component :is="item.icon" />
               <span>{{ item.title }}</span>
-            </RouterLink>
-          </SidebarMenuButton>
+            </SidebarMenuButton>
+          </RouterLink>
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroupContent>

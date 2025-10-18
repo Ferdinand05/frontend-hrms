@@ -12,6 +12,7 @@ import {
   SquareUser,
   User2,
   Users,
+  Wallet,
   Warehouse,
 } from "lucide-vue-next";
 import {
@@ -72,6 +73,14 @@ const employeeItems = [
     url: "/admin/leaves",
     icon: CalendarX2,
   },
+];
+
+const payrollItems = [
+  {
+    title: "Salaries",
+    url: "/admin/salaries",
+    icon: Wallet,
+  },
   {
     title: "Payroll",
     url: "/admin/payrolls",
@@ -100,6 +109,7 @@ const employeeItems = [
       <SidebarGroupItem label="Platform" :items="items" />
       <SidebarGroupItem label="User" :items="userItems" />
       <SidebarGroupItem label="Employee" :items="employeeItems" />
+      <SidebarGroupItem label="Payroll" :items="payrollItems" />
     </SidebarContent>
 
     <!-- sidebar footer -->
