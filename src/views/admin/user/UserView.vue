@@ -12,13 +12,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Input from "@/components/ui/input/Input.vue";
-import { Edit, Eye, PlusCircle, Search, Trash } from "lucide-vue-next";
+import { Edit, PlusCircle, Search, Trash } from "lucide-vue-next";
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 import { onMounted, ref } from "vue";
 import type { UserType } from "@/types/user";
 import Badge from "@/components/ui/badge/Badge.vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
+import Swal from "sweetalert2";
 
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -45,6 +46,44 @@ function getUsers() {
       console.error("Error fetching users:", error);
       users.value = [];
     });
+}
+
+function deleteUser(id: number) {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "You won't be able to revert this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, delete it!",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      axios
+        .delete(`${authStore.apiUrl}/users/${id}`, {
+          headers: {
+            Authorization: `Bearer ${authStore.token}`,
+          },
+        })
+        .then((response) => {
+          console.log(response.data);
+          // Refresh the user list after deletion
+
+          Swal.fire({
+            icon: "success",
+            title: "Deleted!",
+            text: "User has been deleted.",
+            timer: 1100,
+            showConfirmButton: false,
+          });
+
+          getUsers();
+        })
+        .catch((error) => {
+          console.error("Error deleting user:", error);
+        });
+    }
+  });
 }
 
 // Fetch users when the component is mounted
@@ -81,6 +120,7 @@ onMounted(() => {
               <TableHead> Name </TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Employee Name</TableHead>
               <TableHead>Created at</TableHead>
               <TableHead>Action</TableHead>
             </TableRow>
@@ -105,12 +145,22 @@ onMounted(() => {
               <TableCell
                 ><Badge>{{ user.role }}</Badge></TableCell
               >
+              <TableCell>{{ user.employee?.full_name }}</TableCell>
               <TableCell>{{ user.created_at }}</TableCell>
               <TableCell>
                 <div class="flex gap-2">
-                  <Button size="sm"><Eye /></Button>
-                  <Button size="sm"><Edit /></Button>
-                  <Button size="sm" variant="destructive"><Trash /></Button>
+                  <Button size="sm">
+                    <RouterLink :to="{ name: 'edit-user', params: { id: user.id } }">
+                      <Edit />
+                    </RouterLink>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    v-if="authStore.user?.id !== user.id"
+                    @click.prevent="deleteUser(user.id)"
+                    ><Trash
+                  /></Button>
                 </div>
               </TableCell>
             </TableRow>
