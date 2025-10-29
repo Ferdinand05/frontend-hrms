@@ -7,6 +7,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Logs,
   Settings,
   Shield,
   SquareUser,
@@ -29,6 +30,36 @@ import DropdownMenuContent from "./ui/dropdown-menu/DropdownMenuContent.vue";
 import DropdownMenuItem from "./ui/dropdown-menu/DropdownMenuItem.vue";
 import SidebarFooter from "./ui/sidebar/SidebarFooter.vue";
 import SidebarGroupItem from "./SidebarGroupItem.vue";
+import { useAuthStore } from "@/stores/auth";
+import axios from "axios";
+import { ref } from "vue";
+
+const authStore = useAuthStore();
+
+const isLoading = ref(false);
+function logout() {
+  isLoading.value = true;
+  axios
+    .post(
+      `${authStore.apiUrl}/logout`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.getToken}`,
+        },
+      }
+    )
+    .then(() => {
+      authStore.logout();
+      authStore.checkAuth();
+    })
+    .catch((error) => {
+      console.error("There was an error!", error);
+    })
+    .finally(() => {
+      isLoading.value = false;
+    });
+}
 
 // Menu items.
 const items = [
@@ -119,22 +150,31 @@ const payrollItems = [
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton>
-                <User2 /> Username
+                <User2 /> {{ authStore.user?.name }}
                 <ChevronUp class="ml-auto" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" class="w-[--reka-popper-anchor-width]">
               <DropdownMenuItem>
-                <a href="http://" class="flex gap-x-2 items-center">
+                <RouterLink :to="{ name: 'settings' }" class="flex gap-x-2 items-center">
                   <Settings />
                   <span>Settings</span>
-                </a>
+                </RouterLink>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <a href="http://" class="flex gap-x-2 items-center">
+                <RouterLink :to="{ name: 'logs' }" class="flex gap-x-2 items-center">
+                  <Logs />
+                  <span>Logs</span>
+                </RouterLink>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <div
+                  class="flex gap-x-2 items-center hover:cursor-pointer"
+                  @click.prevent="logout()"
+                >
                   <LogOut />
                   <span>Sign out</span>
-                </a>
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

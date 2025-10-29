@@ -23,7 +23,7 @@ const colorClasses: Record<string, string> = {
   green: "bg-green-400 hover:bg-green-500",
   red: "bg-red-400 hover:bg-red-500",
   blue: "bg-blue-400 hover:bg-blue-500",
-  gray: "bg-gray-400 hover:bg-gray-500",
+  stone: "bg-stone-400 hover:bg-stone-500",
 };
 </script>
 

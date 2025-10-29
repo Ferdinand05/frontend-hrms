@@ -5,8 +5,11 @@ import CreateEmployee from "@/views/admin/employee/CreateEmployee.vue";
 import EditEmployee from "@/views/admin/employee/EditEmployee.vue";
 import EmployeeView from "@/views/admin/employee/EmployeeView.vue";
 import LeaveView from "@/views/admin/leave/LeaveView.vue";
+import LogsView from "@/views/admin/log/LogsView.vue";
+import CreatePayroll from "@/views/admin/payroll/CreatePayroll.vue";
 import RoleView from "@/views/admin/role/RoleView.vue";
 import SalaryView from "@/views/admin/salary/SalaryView.vue";
+import SettingView from "@/views/admin/setting/SettingView.vue";
 import CreateUser from "@/views/admin/user/CreateUser.vue";
 import EditUser from "@/views/admin/user/EditUser.vue";
 import UserView from "@/views/admin/user/UserView.vue";
@@ -102,15 +105,38 @@ export const adminRoutes: RouteRecordRaw = {
 
     {
       path: "payrolls",
-      name: "payrolls",
-      component: () => import("@/views/admin/payroll/PayrollView.vue"),
-      meta: { title: "Payroll Management", portal: "admin" },
+      children: [
+        {
+          path: "",
+          name: "payrolls",
+          component: () => import("@/views/admin/payroll/PayrollView.vue"),
+          meta: { title: "Payroll Management", portal: "admin" },
+        },
+        {
+          path: "create",
+          name: "payrolls-create",
+          component: CreatePayroll,
+          meta: { title: "Create Payroll", portal: "admin" },
+        },
+      ],
     },
     {
       path: "salaries",
       name: "salaries-list",
       component: SalaryView,
       meta: { title: "Salary Management", portal: "admin" },
+    },
+    {
+      path: "settings",
+      name: "settings",
+      component: SettingView,
+      meta: { title: "Admin Setting", portal: "admin" },
+    },
+    {
+      path: "logs",
+      name: "logs",
+      component: LogsView,
+      meta: { title: "Logs", portal: "admin" },
     },
   ],
 };

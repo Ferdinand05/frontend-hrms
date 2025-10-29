@@ -56,6 +56,7 @@ import Badge from "@/components/ui/badge/Badge.vue";
 import DropdownMenuLabel from "@/components/ui/dropdown-menu/DropdownMenuLabel.vue";
 import DropdownMenuSeparator from "@/components/ui/dropdown-menu/DropdownMenuSeparator.vue";
 import { RouterLink } from "vue-router";
+import { formatToIDR } from "@/services/salaryService";
 const authStore = useAuthStore();
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -473,7 +474,7 @@ const openAndFillModal = (employee: EmployeeType) => {
       </header>
 
       <main>
-        <div class="flex gap-2 items-center py-4">
+        <div class="flex flex-col-reverse md:flex-row gap-2 py-4 justify-between">
           <div class="flex gap-2 items-center">
             <Input
               class="w-full md:w-64 lg:w-96"
@@ -516,28 +517,32 @@ const openAndFillModal = (employee: EmployeeType) => {
               </DropdownMenu>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button variant="outline" class="ml-auto">
-                Columns <ChevronDown class="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuCheckboxItem
-                v-for="column in table.getAllColumns().filter((column) => column.getCanHide())"
-                :key="column.id"
-                class="capitalize"
-                :model-value="column.getIsVisible()"
-                @update:model-value="
+          <div class="flex gap-x-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" class="ml-auto">
+                  Columns <ChevronDown class="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  v-for="column in table.getAllColumns().filter((column) => column.getCanHide())"
+                  :key="column.id"
+                  class="capitalize"
+                  :model-value="column.getIsVisible()"
+                  @update:model-value="
                   (value: boolean) => {
                     column.toggleVisibility(!!value);
                   }
                 "
-              >
-                {{ column.id }}
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                >
+                  {{ column.id }}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button>Export <Printer /></Button>
+          </div>
         </div>
         <div class="rounded-md border">
           <Table>
@@ -688,6 +693,30 @@ const openAndFillModal = (employee: EmployeeType) => {
                   >{{ detailEmployee?.status }}</Badge
                 >
               </p>
+              <div>
+                <p>
+                  <span class="font-medium text-gray-600">Salary:</span>
+                  {{ formatToIDR(detailEmployee?.salary?.base_salary as number) }}
+                </p>
+              </div>
+              <div>
+                <p>
+                  <span class="font-medium text-gray-600">Allowance:</span>
+                  {{ formatToIDR(detailEmployee?.salary?.allowance as number) }}
+                </p>
+              </div>
+              <div>
+                <p>
+                  <span class="font-medium text-gray-600">Overtime Rate:</span>
+                  {{ formatToIDR(detailEmployee?.salary?.overtime_rate as number) }}
+                </p>
+              </div>
+              <div>
+                <p>
+                  <span class="font-medium text-gray-600">Deduction:</span>
+                  {{ formatToIDR(detailEmployee?.salary?.deduction as number) }}
+                </p>
+              </div>
             </div>
             <div class="mt-2">
               <p>

@@ -1,3 +1,5 @@
+import type { Salary } from "./salary";
+
 export type UserType = {
   id: number;
   name: string;
@@ -28,4 +30,5 @@ export type EmployeeType = {
   status: string;
   created_at: string;
   updated_at: string;
+  salary: Salary;
 };

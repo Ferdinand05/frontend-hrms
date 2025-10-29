@@ -11,6 +11,7 @@ const props = defineProps<{
   title: string;
   description?: string;
   open: boolean;
+  modalClass?: string;
 }>();
 
 const model = computed({
@@ -23,14 +24,14 @@ const emit = defineEmits(["update:open"]);
 
 <template>
   <Dialog v-model:open="model">
-    <DialogContent>
+    <DialogContent :class="['w-full ', modalClass]">
       <DialogHeader>
         <DialogTitle>{{ props.title }}</DialogTitle>
         <DialogDescription>
           {{ props.description }}
         </DialogDescription>
       </DialogHeader>
-      <main>
+      <main class="w-full">
         <slot></slot>
       </main>
       <DialogFooter class="w-full">

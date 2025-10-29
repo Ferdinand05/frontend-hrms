@@ -17,6 +17,7 @@ const password = ref("");
 
 const authStore = useAuthStore();
 const isSubmitting = ref(false);
+const formErrors = ref<Record<string, string[]> | null>(null);
 function login() {
   isSubmitting.value = true;
   axios
@@ -30,6 +31,7 @@ function login() {
     })
     .catch((error) => {
       console.error("There was an error!", error);
+      formErrors.value = error.response.data.message;
     })
     .finally(() => {
       isSubmitting.value = false;
@@ -57,6 +59,7 @@ authStore.checkAuth();
             <Label for="password">Password</Label>
             <Input id="password" v-model="password" type="password" required />
           </div>
+          <p v-if="formErrors" class="text-red-500 text-sm">{{ formErrors }}</p>
         </CardContent>
         <CardFooter>
           <Button class="w-full" :disabled="isSubmitting">

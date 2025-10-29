@@ -18,10 +18,12 @@ export type Department = {
 export type Office = {
   id: number;
   app_name: string;
-  latitude: number;
-  longitude: number;
+  latitude: string;
+  longitude: string;
   radius: number;
   max_accuracy: number;
+  start_time: string;
+  end_time: string;
 };
 
 export type Attendance = {

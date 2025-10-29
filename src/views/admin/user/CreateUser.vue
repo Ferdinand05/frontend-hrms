@@ -51,7 +51,7 @@ function getRoles() {
 const employees = ref<EmployeeType[]>([]);
 function getEmployees() {
   axios
-    .get(`${authStore.apiUrl}/employees`, {
+    .get(`${authStore.apiUrl}/employees-without-user`, {
       headers: {
         Authorization: `Bearer ${authStore.token}`,
       },

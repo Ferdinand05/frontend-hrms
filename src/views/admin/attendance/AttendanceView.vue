@@ -24,7 +24,7 @@ import {
   type VisibilityState,
 } from "@tanstack/vue-table";
 import type { Attendance } from "@/types";
-import { computed, h, onMounted, ref } from "vue";
+import { h, onMounted, ref } from "vue";
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 import { ChevronDown, ChevronsUpDown, Edit, Eye, Printer } from "lucide-vue-next";
@@ -45,6 +45,7 @@ import SelectContent from "@/components/ui/select/SelectContent.vue";
 import SelectGroup from "@/components/ui/select/SelectGroup.vue";
 import SelectItem from "@/components/ui/select/SelectItem.vue";
 import Swal from "sweetalert2";
+import DatePicker from "@/components/attendance/DatePicker.vue";
 
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -304,12 +305,12 @@ const columnVisibility = ref<VisibilityState>({});
 const rowSelection = ref({});
 const expanded = ref<ExpandedState>({});
 
-const selectedData = computed(() => {
-  return Object.entries(rowSelection.value).map(function (id) {
-    const data = table.getRow(id[0]);
-    return data.original.id;
-  });
-});
+// const selectedData = computed(() => {
+//   return Object.entries(rowSelection.value).map(function (id) {
+//     const data = table.getRow(id[0]);
+//     return data.original.id;
+//   });
+// });
 
 const table = useVueTable({
   data: attendances,
@@ -346,6 +347,36 @@ const table = useVueTable({
     },
   },
 });
+
+const buttonFilter = ref<boolean>(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterByDate(range: { start: any; end: any }) {
+  const start = range.start !== undefined ? range.start.toString() : null;
+  const end = range.end !== undefined ? range.end.toString() : null;
+  console.log(`Filter dari : ${range.start} sampai ${range.end}`);
+  buttonFilter.value = true;
+  axios
+    .get(`${authStore.apiUrl}/attendances`, {
+      headers: {
+        Authorization: `Bearer ${authStore.getToken}`,
+      },
+      params: {
+        start_date: start,
+        end_date: end,
+      },
+    })
+    .then((response) => {
+      console.log(response.data);
+      attendances.value = response.data.attendances;
+    })
+    .catch((error) => {
+      console.log(error);
+      buttonFilter.value = false;
+    })
+    .finally(() => {
+      buttonFilter.value = false;
+    });
+}
 </script>
 
 <template>
@@ -355,8 +386,12 @@ const table = useVueTable({
     subheading="Manage all attendance records"
   >
     <main class="w-full">
-      <div class="flex gap-2 items-center py-4">
-        <div class="flex gap-2 items-center">
+      <!-- date filter -->
+      <div class="flex justify-end">
+        <DatePicker :buttonStatus="buttonFilter" @updateDate="filterByDate"></DatePicker>
+      </div>
+      <div class="flex flex-col-reverse md:flex-row gap-2 items-center py-4">
+        <div class="w-full">
           <Input
             class="w-full md:w-64 lg:w-96"
             placeholder="Search by employee name..."
