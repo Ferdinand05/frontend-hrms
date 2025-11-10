@@ -40,6 +40,8 @@ import DropdownMenuContent from "@/components/ui/dropdown-menu/DropdownMenuConte
 import DropdownMenuCheckboxItem from "@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue";
 import { cn } from "@/lib/utils";
 import router from "@/router";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -250,6 +252,61 @@ const table = useVueTable({
     },
   },
 });
+
+function printUser() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text("Users Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 105, 22, { align: "center" });
+
+  // Table
+  autoTable(doc, {
+    startY: 30,
+    head: [["#", "Name", "Email", "Position", "Role", "Created At"]],
+    body: users.value.map((item, index) => [
+      index + 1,
+      item.name,
+      item.email,
+      item.employee?.position ?? "-",
+      item.role,
+      item.created_at,
+    ]),
+    theme: "striped",
+    headStyles: {
+      fillColor: [41, 128, 185], // biru muda
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [33, 33, 33],
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Save
+  doc.save(`users-report.pdf`);
+}
 </script>
 
 <template>
@@ -301,7 +358,7 @@ const table = useVueTable({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button>Export <Printer /></Button>
+            <Button @click.prevent="printUser">Export <Printer /></Button>
           </div>
         </div>
         <div class="rounded-md border">

@@ -33,6 +33,7 @@ import SelectItem from "@/components/ui/select/SelectItem.vue";
 import Input from "@/components/ui/input/Input.vue";
 import Textarea from "@/components/ui/textarea/Textarea.vue";
 import type { Payroll } from "@/types/payroll";
+import { printDetailPayroll } from "@/services/payrollService";
 // -------
 const authStore = useAuthStore();
 
@@ -594,8 +595,8 @@ function openModalPayroll() {
             <thead class="bg-gray-100 text-gray-700">
               <tr>
                 <th class="px-4 py-2 text-left font-semibold">Base Salary</th>
-                <th class="px-4 py-2 text-left font-semibold">Allowance</th>
-                <th class="px-4 py-2 text-left font-semibold">Deduction</th>
+                <th class="px-4 py-2 text-left font-semibold">Allowance (+)</th>
+                <th class="px-4 py-2 text-left font-semibold">Deduction (-)</th>
                 <th class="px-4 py-2 text-left font-semibold">Overtime Hours</th>
                 <th class="px-4 py-2 text-left font-semibold">Overtime Rate</th>
                 <th class="px-4 py-2 text-left font-semibold">Overtime Pay</th>
@@ -615,7 +616,7 @@ function openModalPayroll() {
                 <td class="px-4 py-2 text-gray-800">
                   Rp {{ Number(userPayroll.deduction).toLocaleString() }}
                 </td>
-                <td class="px-4 py-2 text-gray-800">{{ userPayroll.overtime_hours }}</td>
+                <td class="px-4 py-2 text-gray-800">{{ userPayroll.overtime_hours }} hour(s)</td>
                 <td class="px-4 py-2 text-gray-800">
                   Rp {{ Number(userPayroll.salary?.overtime_rate).toLocaleString() }}
                 </td>
@@ -626,7 +627,13 @@ function openModalPayroll() {
                   Rp {{ Number(userPayroll.total_salary).toLocaleString() }}
                 </td>
                 <td class="px-4 py-2 text-center">
-                  <Button size="sm" variant="outline" class="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    v-if="userPayroll.status == 'paid'"
+                    variant="outline"
+                    @click="printDetailPayroll(userPayroll)"
+                    class="flex items-center gap-1"
+                  >
                     <Printer class="w-4 h-4" /> Print
                   </Button>
                 </td>

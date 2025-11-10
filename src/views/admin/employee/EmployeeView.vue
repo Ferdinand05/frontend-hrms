@@ -57,6 +57,8 @@ import DropdownMenuLabel from "@/components/ui/dropdown-menu/DropdownMenuLabel.v
 import DropdownMenuSeparator from "@/components/ui/dropdown-menu/DropdownMenuSeparator.vue";
 import { RouterLink } from "vue-router";
 import { formatToIDR } from "@/services/salaryService";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 const authStore = useAuthStore();
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -458,6 +460,62 @@ const openAndFillModal = (employee: EmployeeType) => {
   detailEmployee.value = employee;
   openModalEmployee.value = true;
 };
+
+function printEmployees() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text("Users Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 105, 22, { align: "center" });
+
+  // Table
+  autoTable(doc, {
+    startY: 30,
+    head: [["#", "Status", "Employee Code", "Full Name", "Position", "Department", "Hire Date"]],
+    body: employees.value.map((item, index) => [
+      index + 1,
+      item.status,
+      item.employee_code,
+      item.full_name,
+      item.position,
+      item?.department?.name ?? "-",
+      item.hire_date,
+    ]),
+    theme: "striped",
+    headStyles: {
+      fillColor: [41, 128, 185], // biru muda
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [33, 33, 33],
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Save
+  doc.save(`employees-report.pdf`);
+}
 </script>
 
 <template>
@@ -541,7 +599,7 @@ const openAndFillModal = (employee: EmployeeType) => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button>Export <Printer /></Button>
+            <Button @click.prevent="printEmployees">Export <Printer /></Button>
           </div>
         </div>
         <div class="rounded-md border">

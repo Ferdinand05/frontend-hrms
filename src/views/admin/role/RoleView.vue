@@ -44,6 +44,8 @@ import DropdownMenu from "@/components/ui/dropdown-menu/DropdownMenu.vue";
 import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
 import DropdownMenuContent from "@/components/ui/dropdown-menu/DropdownMenuContent.vue";
 import DropdownMenuCheckboxItem from "@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const authStore = useAuthStore();
 
@@ -323,6 +325,59 @@ const table = useVueTable({
     },
   },
 });
+
+function printRoles() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text("Roles Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 105, 22, { align: "center" });
+
+  // Table
+  autoTable(doc, {
+    startY: 30,
+    head: [["#", "Role", "User Count", "Created At"]],
+    body: roles.value.map((item, index) => [
+      index + 1,
+      item.role_name,
+      item.count,
+      item.created_at,
+    ]),
+    theme: "striped",
+    headStyles: {
+      fillColor: [41, 128, 185], // biru muda
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [33, 33, 33],
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Save
+  doc.save(`roles-report.pdf`);
+}
 </script>
 
 <template>
@@ -374,7 +429,7 @@ const table = useVueTable({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button>Export <Printer /></Button>
+            <Button @click.prevent="printRoles()">Export <Printer /></Button>
           </div>
         </div>
         <div class="rounded-md border">

@@ -46,6 +46,8 @@ import SelectGroup from "@/components/ui/select/SelectGroup.vue";
 import SelectItem from "@/components/ui/select/SelectItem.vue";
 import Swal from "sweetalert2";
 import DatePicker from "@/components/attendance/DatePicker.vue";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -349,6 +351,8 @@ const table = useVueTable({
 });
 
 const buttonFilter = ref<boolean>(false);
+const startDate = ref<string | null>(null);
+const endDate = ref<string | null>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function filterByDate(range: { start: any; end: any }) {
   const start = range.start !== undefined ? range.start.toString() : null;
@@ -368,6 +372,8 @@ function filterByDate(range: { start: any; end: any }) {
     .then((response) => {
       console.log(response.data);
       attendances.value = response.data.attendances;
+      startDate.value = start;
+      endDate.value = end;
     })
     .catch((error) => {
       console.log(error);
@@ -376,6 +382,107 @@ function filterByDate(range: { start: any; end: any }) {
     .finally(() => {
       buttonFilter.value = false;
     });
+}
+
+function printAttendances() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text("Employee Attendance Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(
+    `Date Range: ${
+      startDate.value && endDate.value
+        ? `${new Date(startDate.value).toLocaleDateString()} - ${new Date(
+            endDate.value
+          ).toLocaleDateString()}`
+        : "All Dates"
+    }`,
+    105,
+    22,
+    { align: "center" }
+  );
+
+  // 1️⃣ Generate table first (without image column)
+  autoTable(doc, {
+    startY: 30,
+    head: [
+      [
+        "#",
+        "Status",
+        "Employee Name",
+        "Date",
+        "Check In",
+        "Check Out",
+        "Coords",
+        "Accuracy",
+        "Image",
+      ],
+    ],
+    body: attendances.value.map((item, index) => [
+      index + 1,
+      item.status,
+      item.employee.full_name,
+      item.date,
+      item.clock_in,
+      item.clock_out,
+      item.latitude + "," + item.longitude,
+      item.accuracy,
+      "",
+    ]),
+    theme: "striped",
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+    },
+    styles: {
+      cellPadding: 2,
+      valign: "middle",
+    },
+    didDrawCell: (data) => {
+      // ✅ Jalankan hanya di body section
+      if (data.section === "body" && data.column.index === 8) {
+        const item = attendances.value[data.row.index];
+        // jika item undefined atau tidak punya image_path, keluar lebih awal
+        if (!item || !item.image_path) return;
+
+        if (item.image_path) {
+          const linkTextWidth = doc.getTextWidth("View Image");
+          const x = data.cell.x + (data.cell.width - linkTextWidth) / 2;
+          const y = data.cell.y + data.cell.height / 2 + 2;
+
+          doc.setTextColor(0, 0, 255); // biru
+          doc.textWithLink("View Image", x, y, {
+            url: imageUrl + item.image_path,
+          });
+          doc.setTextColor(0, 0, 0); // reset ke hitam
+        }
+      }
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Simpan PDF
+
+  if (startDate.value && endDate.value) {
+    doc.save(`attendances-report-${startDate.value}-${endDate.value}.pdf`);
+  } else {
+    doc.save(`attendances-report.pdf`);
+  }
 }
 </script>
 
@@ -424,7 +531,9 @@ function filterByDate(range: { start: any; end: any }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button>Exports <Printer /></Button>
+          <Button @click.prevent="printAttendances" :disabled="attendances.length === 0"
+            >Exports <Printer
+          /></Button>
         </div>
       </div>
       <div class="rounded-md border">

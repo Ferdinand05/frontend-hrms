@@ -11,6 +11,13 @@ import DropdownMenuSeparator from "@/components/ui/dropdown-menu/DropdownMenuSep
 import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
 import Input from "@/components/ui/input/Input.vue";
 import Label from "@/components/ui/label/Label.vue";
+import Select from "@/components/ui/select/Select.vue";
+import SelectContent from "@/components/ui/select/SelectContent.vue";
+import SelectGroup from "@/components/ui/select/SelectGroup.vue";
+import SelectItem from "@/components/ui/select/SelectItem.vue";
+import SelectLabel from "@/components/ui/select/SelectLabel.vue";
+import SelectTrigger from "@/components/ui/select/SelectTrigger.vue";
+import SelectValue from "@/components/ui/select/SelectValue.vue";
 import Table from "@/components/ui/table/Table.vue";
 import TableBody from "@/components/ui/table/TableBody.vue";
 import TableCell from "@/components/ui/table/TableCell.vue";
@@ -19,6 +26,7 @@ import TableHeader from "@/components/ui/table/TableHeader.vue";
 import TableRow from "@/components/ui/table/TableRow.vue";
 import { valueUpdater } from "@/components/ui/table/utils";
 import { cn } from "@/lib/utils";
+import { printDetailPayroll } from "@/services/payrollService";
 import { formatToIDR } from "@/services/salaryService";
 import { useAuthStore } from "@/stores/auth";
 import type { breadcrumbItem } from "@/types/breadcrumb";
@@ -39,7 +47,17 @@ import {
   type VisibilityState,
 } from "@tanstack/vue-table";
 import axios from "axios";
-import { ChevronDown, ChevronsUpDown, Edit, PlusCircle, Printer, Trash } from "lucide-vue-next";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import {
+  ChevronDown,
+  ChevronsUpDown,
+  Edit,
+  PlusCircle,
+  Printer,
+  Rocket,
+  Trash,
+} from "lucide-vue-next";
 import Swal from "sweetalert2";
 import { computed, h, onMounted, watch } from "vue";
 import { ref } from "vue";
@@ -238,7 +256,7 @@ const columns = [
             variant: "default",
             size: "sm",
             title: "Print",
-            onClick: () => printPayroll(row.original),
+            onClick: () => printDetailPayroll(row.original),
           },
           () => h(Printer, { class: "h-4 w-4" })
         ),
@@ -308,6 +326,7 @@ const base_salary = ref(0);
 const deduction = ref(0);
 const allowance = ref(0);
 const payroll_id = ref();
+const status = ref<string>("");
 const modalEdit = ref<boolean>(false);
 function openModalAndFill(payroll: Payroll) {
   period.value = payroll.period;
@@ -318,6 +337,7 @@ function openModalAndFill(payroll: Payroll) {
   deduction.value = Number(payroll.deduction);
   allowance.value = Number(payroll.allowance);
   payroll_id.value = payroll.id;
+  status.value = payroll.status;
   modalEdit.value = true;
 }
 
@@ -342,6 +362,7 @@ function updatePayroll() {
         total_salary: total_salary.value,
         overtime_hours: overtime_hours.value,
         overtime_pay: overtime_pay.value,
+        status: status.value,
       },
       {
         headers: {
@@ -365,10 +386,6 @@ function updatePayroll() {
     .finally(() => {
       buttonUpdate.value = false;
     });
-}
-
-function printPayroll(payroll: Payroll) {
-  console.log(payroll);
 }
 
 // SECTION Selection
@@ -396,13 +413,37 @@ function selectionSetPaid() {
           }
         )
         .then((response) => {
+          let timerInterval: number;
           Swal.fire({
-            title: "Paid!",
-            text: `${response.data.message}`,
-            icon: "info",
+            title: "Processing!",
+            html: "I will close in <b></b> milliseconds.",
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: () => {
+              Swal.showLoading();
+              const popup = Swal.getPopup();
+              const timer = popup?.querySelector("b");
+              timerInterval = setInterval(() => {
+                if (timer) {
+                  timer.textContent = `${Swal.getTimerLeft()}`;
+                }
+              }, 300);
+            },
+            willClose: () => {
+              clearInterval(timerInterval);
+            },
+          }).then((result) => {
+            /* Read more about handling dismissals below */
+            if (result.dismiss === Swal.DismissReason.timer) {
+              console.log("I was closed by the timer");
+              getPayrolls();
+              Swal.fire({
+                title: "Paid!",
+                text: `${response.data.message}`,
+                icon: "info",
+              });
+            }
           });
-
-          getPayrolls();
         })
         .catch((error) => {
           console.log(error);
@@ -412,6 +453,7 @@ function selectionSetPaid() {
 }
 
 function bulkDelete() {
+  console.log(selectedData.value);
   Swal.fire({
     title: "Are you sure?",
     text: "You won't be able to revert this!",
@@ -435,13 +477,37 @@ function bulkDelete() {
           }
         )
         .then((response) => {
+          let timerInterval: number;
           Swal.fire({
-            title: "Deleted!",
-            text: `${response.data.message}`,
-            icon: "info",
+            title: "Processing!",
+            html: "I will close in <b></b> milliseconds.",
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: () => {
+              Swal.showLoading();
+              const popup = Swal.getPopup();
+              const timer = popup?.querySelector("b");
+              timerInterval = setInterval(() => {
+                if (timer) {
+                  timer.textContent = `${Swal.getTimerLeft()}`;
+                }
+              }, 300);
+            },
+            willClose: () => {
+              clearInterval(timerInterval);
+            },
+          }).then((result) => {
+            /* Read more about handling dismissals below */
+            if (result.dismiss === Swal.DismissReason.timer) {
+              console.log("I was closed by the timer");
+              getPayrolls();
+              Swal.fire({
+                title: "Deleted!",
+                text: `${response.data.message}`,
+                icon: "info",
+              });
+            }
           });
-
-          getPayrolls();
         })
         .catch((error) => {
           console.log(error);
@@ -450,7 +516,7 @@ function bulkDelete() {
   });
 }
 
-const monthValue = ref();
+const monthValue = ref(new Date().toISOString().slice(0, 7)); // YYYY-MM format
 watch(monthValue, (newVal) => {
   axios
     .get(`${authStore.apiUrl}/payrolls`, {
@@ -469,6 +535,151 @@ watch(monthValue, (newVal) => {
       console.log(error);
     });
 });
+
+const loadingGenerateAll = ref(false);
+function generateAllEmployeePayroll() {
+  loadingGenerateAll.value = true;
+  Swal.fire({
+    title: "Are you sure?",
+    text: "You won't be able to revert this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Generate!",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // store data
+
+      axios
+        .post(
+          `${authStore.apiUrl}/payrolls/generate-all`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.getToken}`,
+            },
+          }
+        )
+        .then((response) => {
+          let timerInterval: number;
+          Swal.fire({
+            title: "Processing!",
+            html: "I will close in <b></b> milliseconds.",
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: () => {
+              Swal.showLoading();
+              const popup = Swal.getPopup();
+              const timer = popup?.querySelector("b");
+              timerInterval = setInterval(() => {
+                if (timer) {
+                  timer.textContent = `${Swal.getTimerLeft()}`;
+                }
+              }, 300);
+            },
+            willClose: () => {
+              clearInterval(timerInterval);
+            },
+          }).then((result) => {
+            /* Read more about handling dismissals below */
+            if (result.dismiss === Swal.DismissReason.timer) {
+              console.log("I was closed by the timer");
+              getPayrolls();
+              loadingGenerateAll.value = false;
+              Swal.fire({
+                title: "Generated!",
+                icon: "info",
+                text: `${response.data.message}`,
+              });
+            }
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+          loadingGenerateAll.value = false;
+        })
+        .finally(() => {
+          loadingGenerateAll.value = false;
+        });
+    } else {
+      loadingGenerateAll.value = false;
+    }
+  });
+}
+
+function exportPayrolls() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text("Employee Payroll Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(`Month: ${monthValue.value}`, 105, 22, { align: "center" });
+
+  // Table
+  autoTable(doc, {
+    startY: 30,
+    head: [
+      [
+        "#",
+        "Status",
+        "Period",
+        "Employee",
+        "Base Salary",
+        "Allowance",
+        "Deduction",
+        "Overtime Hours",
+        "Overtime Pay",
+        "Total Salary",
+      ],
+    ],
+    body: payrolls.value.map((item, index) => [
+      index + 1,
+      item.status,
+      item.period,
+      item.employee?.full_name ?? "-",
+      formatToIDR(item.base_salary),
+      formatToIDR(item.allowance),
+      formatToIDR(item.deduction),
+      item.overtime_hours ?? 0,
+      formatToIDR(item.overtime_pay),
+      formatToIDR(item.total_salary),
+    ]),
+    theme: "striped",
+    headStyles: {
+      fontSize: 9,
+      fillColor: [41, 128, 185], // biru muda
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [33, 33, 33],
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Save
+  doc.save(`payrolls-report-${monthValue.value}.pdf`);
+}
 </script>
 
 <template>
@@ -485,6 +696,15 @@ watch(monthValue, (newVal) => {
             <Input type="month" id="month" v-model="monthValue" />
           </div>
           <div>
+            <Button
+              class="mr-2"
+              variant="destructive"
+              :disabled="loadingGenerateAll"
+              @click="generateAllEmployeePayroll"
+            >
+              <Rocket /> Generate All Employee Payroll
+            </Button>
+
             <router-link :to="{ name: 'payrolls-create' }">
               <Button> <PlusCircle /> Create Payroll</Button>
             </router-link>
@@ -555,7 +775,9 @@ watch(monthValue, (newVal) => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button>Export <Printer /></Button>
+            <Button @click="exportPayrolls" :disabled="payrolls.length == 0"
+              >Export <Printer
+            /></Button>
           </div>
         </div>
         <div class="rounded-md border">
@@ -652,6 +874,22 @@ watch(monthValue, (newVal) => {
     <form @submit.prevent="updatePayroll">
       <section class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div class="space-y-2">
+          <Label>Status</Label>
+          <Select v-model="status">
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="Select a status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Status</SelectLabel>
+                <SelectItem value="pending"> Pending </SelectItem>
+                <SelectItem value="paid"> Paid </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="space-y-2">
           <Label>Period</Label>
           <Input type="month" v-model="period" />
         </div>
@@ -704,7 +942,7 @@ watch(monthValue, (newVal) => {
             class="disabled:bg-gray-100"
           />
         </div>
-        <div class="md:col-start-2 flex justify-end">
+        <div class="mt-4 col-span-2 flex justify-end">
           <Button type="submit" :disabled="buttonUpdate">Save Changes</Button>
         </div>
       </section>

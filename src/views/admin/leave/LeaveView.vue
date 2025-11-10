@@ -46,6 +46,8 @@ import {
   type VisibilityState,
 } from "@tanstack/vue-table";
 import axios from "axios";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { ChevronDown, ChevronsUpDown, Edit, Printer, Trash } from "lucide-vue-next";
 import Swal from "sweetalert2";
 import { computed, h, onMounted, ref } from "vue";
@@ -534,6 +536,8 @@ function bulkDelete() {
 
 // filter date
 const buttonFilter = ref<boolean>(false);
+const start_date = ref<string | null>(null);
+const end_date = ref<string | null>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function filterByDate(range: { start: any; end: any }) {
   const start = range.start !== undefined ? range.start.toString() : null;
@@ -553,6 +557,8 @@ function filterByDate(range: { start: any; end: any }) {
     .then((response) => {
       console.log(response.data);
       leaves.value = response.data.leaves;
+      start_date.value = start;
+      end_date.value = end;
     })
     .catch((error) => {
       console.log(error);
@@ -561,6 +567,74 @@ function filterByDate(range: { start: any; end: any }) {
     .finally(() => {
       buttonFilter.value = false;
     });
+}
+
+function exportLeaves() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text(" Leaves Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(
+    start_date.value && end_date.value
+      ? `From: ${start_date.value} To: ${end_date.value}`
+      : "All Leaves Data",
+    105,
+    22,
+    { align: "center" }
+  );
+
+  // Table
+  autoTable(doc, {
+    startY: 30,
+    head: [["#", "Status", "Employee", "Leave Type", "Reason", "Start", "End", "Approver"]],
+    body: leaves.value.map((item, index) => [
+      index + 1,
+      item.status,
+      item.employee?.full_name ?? "-",
+      item.leave_type,
+      item.reason,
+      item.start_date,
+      item.end_date,
+      item.approver?.name ?? "-",
+    ]),
+    theme: "striped",
+    headStyles: {
+      fillColor: [41, 128, 185], // biru muda
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [33, 33, 33],
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Save
+  if (start_date.value && end_date.value)
+    doc.save(`leave-report-${start_date.value}-to-${end_date.value}.pdf`);
+  else {
+    doc.save(`leaves-report.pdf`);
+  }
 }
 </script>
 
@@ -634,7 +708,9 @@ function filterByDate(range: { start: any; end: any }) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button>Export <Printer /></Button>
+            <Button @click.prevent="exportLeaves" :disabled="leaves.length == 0"
+              >Export <Printer
+            /></Button>
           </div>
         </div>
         <div class="rounded-md border">

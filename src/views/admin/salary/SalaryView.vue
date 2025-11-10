@@ -43,6 +43,8 @@ import {
   type VisibilityState,
 } from "@tanstack/vue-table";
 import axios from "axios";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { ChevronDown, ChevronsUpDown, Edit, PlusCircle, Printer, Trash } from "lucide-vue-next";
 import Swal from "sweetalert2";
 import { ref } from "vue";
@@ -433,6 +435,60 @@ function deleteSalary(id: number) {
     }
   });
 }
+
+function exportSalaries() {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Header
+  doc.setFontSize(14);
+  doc.text("Employe Salaries Report", 105, 15, { align: "center" });
+  doc.setFontSize(10);
+
+  // Table
+  autoTable(doc, {
+    startY: 30,
+    head: [["#", "Employee", "Base Salary", "Allowance", "Deduction", "Overtime Rate"]],
+    body: salaries.value.map((item, index) => [
+      index + 1,
+      item.employee.full_name,
+      formatToIDR(item.base_salary),
+      formatToIDR(item.allowance),
+      formatToIDR(item.deduction),
+      formatToIDR(item.overtime_rate),
+    ]),
+    theme: "striped",
+    headStyles: {
+      fillColor: [41, 128, 185], // biru muda
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [33, 33, 33],
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text(`Generated at: ${new Date().toLocaleString()}`, 10, pageHeight - 10);
+  doc.text("HRM System - Confidential", 200, pageHeight - 10, { align: "right" });
+
+  // Save
+  doc.save(`salaries-report.pdf`);
+}
 </script>
 
 <template>
@@ -481,7 +537,9 @@ function deleteSalary(id: number) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button>Export <Printer /></Button>
+            <Button @click.prevent="exportSalaries" :disabled="salaries.length == 0"
+              >Export <Printer
+            /></Button>
           </div>
         </div>
         <div class="rounded-md border">
