@@ -404,7 +404,9 @@ function userStoreLeaves() {
 const modalClass = "md:max-w-4xl";
 // get data payroll for user this month
 const userPayroll = ref<Payroll | null>(null);
+const loadUserPayroll = ref<boolean>(false);
 function getUserPayrollThisMonth() {
+  loadUserPayroll.value = true;
   axios
     .get(`${authStore.apiUrl}/payrolls/user/this-month`, {
       headers: {
@@ -416,6 +418,9 @@ function getUserPayrollThisMonth() {
     })
     .catch((error) => {
       console.log(error);
+    })
+    .finally(() => {
+      loadUserPayroll.value = false;
     });
 }
 
@@ -557,7 +562,13 @@ function openModalPayroll() {
       description="Your latest payroll"
       v-model:open="modalPayroll"
     >
-      <section v-if="userPayroll" class="space-y-4 p-4 bg-gray-50 rounded-xl shadow-inner">
+      <!-- Loading State -->
+      <div v-if="loadUserPayroll" class="p-4 text-center text-gray-500 animate-pulse">
+        Loading...
+      </div>
+
+      <!-- Data Found -->
+      <section v-else-if="userPayroll" class="space-y-4 p-4 bg-gray-50 rounded-xl shadow-inner">
         <!-- Employee Info -->
         <div class="border-b border-gray-200 pb-2">
           <h3 class="text-lg font-semibold text-gray-800 capitalize">
@@ -625,7 +636,12 @@ function openModalPayroll() {
         </div>
       </section>
 
-      <div v-else class="p-4 text-center text-gray-500">Loading...</div>
+      <!-- No Data Found -->
+      <div v-else class="text-center text-lg text-gray-500 py-6">
+        Payroll not found! <br />
+        <span class="text-sm text-gray-400">Check regularly.</span>
+      </div>
+
       <template #footer>
         <Button size="sm" @click="modalPayroll = false">Close</Button>
       </template>
