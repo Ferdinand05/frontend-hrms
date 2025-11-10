@@ -9,10 +9,9 @@ import TableHeader from "@/components/ui/table/TableHeader.vue";
 import TableRow from "@/components/ui/table/TableRow.vue";
 import DashboardLayout from "@/views/layouts/DashboardLayout.vue";
 import axios from "axios";
-import { Edit, PlusCircle, Search, Trash } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
+import { ChevronDown, ChevronsUpDown, Edit, PlusCircle, Printer, Trash } from "lucide-vue-next";
+import { h, onMounted, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import Swal from "sweetalert2";
 import {
   Dialog,
@@ -25,6 +24,26 @@ import {
 import { Label } from "@/components/ui/label";
 import Textarea from "@/components/ui/textarea/Textarea.vue";
 import type { Department } from "@/types";
+import { cn } from "@/lib/utils";
+import {
+  createColumnHelper,
+  FlexRender,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useVueTable,
+  type ColumnFiltersState,
+  type ExpandedState,
+  type SortingState,
+  type VisibilityState,
+} from "@tanstack/vue-table";
+import { valueUpdater } from "@/components/ui/table/utils";
+import DropdownMenu from "@/components/ui/dropdown-menu/DropdownMenu.vue";
+import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
+import DropdownMenuContent from "@/components/ui/dropdown-menu/DropdownMenuContent.vue";
+import DropdownMenuCheckboxItem from "@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue";
 
 const authStore = useAuthStore();
 const breadcrumbs = [
@@ -34,7 +53,7 @@ const breadcrumbs = [
   },
 ];
 
-const departments = ref<Department[] | null>(null);
+const departments = ref<Department[]>([]);
 function getDepartments() {
   axios
     .get(`${authStore.apiUrl}/departments`, {
@@ -204,6 +223,139 @@ function deleteDepartment(id: number) {
     }
   });
 }
+
+// tanstack table
+const columnHelper = createColumnHelper<Department>();
+const columns = [
+  columnHelper.accessor("name", {
+    id: "name",
+    enablePinning: true,
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Name", h(ChevronsUpDown, { class: "ml-2 h-4 w-4" })]
+      );
+    },
+    cell: ({ row }) => {
+      return h("div", { class: "capitalize" }, row.getValue("name"));
+    },
+  }),
+  columnHelper.accessor("description", {
+    id: "description",
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Description", h(ChevronsUpDown, { class: "ml-2 h-4 w-4" })]
+      );
+    },
+    cell: ({ row }) =>
+      h(
+        "div",
+        {
+          class: "capitalize ",
+        },
+        row.getValue("description")
+      ),
+  }),
+  columnHelper.accessor("count", {
+    id: "count",
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Employee Count", h(ChevronsUpDown, { class: "ml-2 h-4 w-4" })]
+      );
+    },
+    cell: ({ row }) =>
+      h(
+        "div",
+        {
+          class: "capitalize ",
+        },
+        row.original.count
+      ),
+  }),
+  columnHelper.display({
+    id: "actions",
+    header: () => "Actions",
+    cell: ({ row }) => {
+      return h("div", { class: "flex gap-2" }, [
+        h(Button, { size: "sm", variant: "outline", asChild: true, title: "Edit Department" }, () =>
+          h(
+            Button,
+            { variant: "outline", onClick: () => fillModal(row.original) },
+            h(Edit, { class: "h-4 w-4" })
+          )
+        ),
+        h(
+          Button,
+          {
+            variant: "destructive",
+            size: "sm",
+            title: "Delete Department",
+            onClick: () => deleteDepartment(row.original.id),
+          },
+          () => h(Trash, { class: "h-4 w-4" })
+        ),
+      ]);
+    },
+    enableSorting: false,
+    enableHiding: false,
+  }),
+];
+
+const sorting = ref<SortingState>([]);
+const columnFilters = ref<ColumnFiltersState>([]);
+const columnVisibility = ref<VisibilityState>({});
+const rowSelection = ref({});
+const expanded = ref<ExpandedState>({});
+
+const table = useVueTable({
+  data: departments,
+  columns,
+  getCoreRowModel: getCoreRowModel(),
+  getPaginationRowModel: getPaginationRowModel(),
+  getSortedRowModel: getSortedRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
+  getExpandedRowModel: getExpandedRowModel(),
+  onSortingChange: (updaterOrValue) => valueUpdater(updaterOrValue, sorting),
+  onColumnFiltersChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnFilters),
+  onColumnVisibilityChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnVisibility),
+  onRowSelectionChange: (updaterOrValue) => valueUpdater(updaterOrValue, rowSelection),
+  onExpandedChange: (updaterOrValue) => valueUpdater(updaterOrValue, expanded),
+  enableRowSelection: true,
+  state: {
+    get sorting() {
+      return sorting.value;
+    },
+    get columnFilters() {
+      return columnFilters.value;
+    },
+    get columnVisibility() {
+      return columnVisibility.value;
+    },
+    get rowSelection() {
+      return rowSelection.value;
+    },
+    get expanded() {
+      return expanded.value;
+    },
+    columnPinning: {
+      left: ["status"],
+    },
+  },
+});
 </script>
 
 <template>
@@ -213,63 +365,130 @@ function deleteDepartment(id: number) {
     subheading="Manage department data for users"
   >
     <section clas="w-full">
-      <header class="mb-4 flex flex-col md:flex-row w-full gap-y-2 md:items-center justify-between">
-        <div class="relative w-full max-w-sm items-center">
-          <Input id="search" type="text" placeholder="Search..." class="pl-10" />
-          <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-            <Search class="size-6 text-muted-foreground" />
-          </span>
+      <main>
+        <header class="my-4">
+          <div class="flex justify-end">
+            <Button @click="modalCreateOpen = true"> <PlusCircle /> Create Department</Button>
+          </div>
+        </header>
+        <div class="flex gap-2 items-center py-4 justify-between">
+          <div class="flex gap-2 items-center">
+            <Input
+              class="w-full md:w-64 lg:w-96"
+              placeholder="Search by name..."
+              :model-value="table.getColumn('name')?.getFilterValue() as string"
+              @update:model-value="table.getColumn('name')?.setFilterValue($event)"
+            />
+          </div>
+          <div class="flex gap-x-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" class="ml-auto">
+                  Columns <ChevronDown class="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  v-for="column in table.getAllColumns().filter((column) => column.getCanHide())"
+                  :key="column.id"
+                  class="capitalize"
+                  :model-value="column.getIsVisible()"
+                  @update:model-value="
+                  (value: boolean) => {
+                    column.toggleVisibility(!!value);
+                  }
+                "
+                >
+                  {{ column.id }}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button>Export <Printer /></Button>
+          </div>
+        </div>
+        <div class="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
+                <TableHead
+                  v-for="header in headerGroup.headers"
+                  :key="header.id"
+                  :data-pinned="header.column.getIsPinned()"
+                  :class="
+                    cn(
+                      { 'sticky bg-background/95': header.column.getIsPinned() },
+                      header.column.getIsPinned() === 'left' ? 'left-0' : 'right-0'
+                    )
+                  "
+                >
+                  <FlexRender
+                    v-if="!header.isPlaceholder"
+                    :render="header.column.columnDef.header"
+                    :props="header.getContext()"
+                  />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <template v-if="table.getRowModel().rows?.length">
+                <template v-for="row in table.getRowModel().rows" :key="row.id">
+                  <TableRow :data-state="row.getIsSelected() && 'selected'">
+                    <TableCell
+                      v-for="cell in row.getVisibleCells()"
+                      :key="cell.id"
+                      :data-pinned="cell.column.getIsPinned()"
+                      :class="
+                        cn(
+                          { 'sticky bg-background/95': cell.column.getIsPinned() },
+                          cell.column.getIsPinned() === 'left' ? 'left-0' : 'right-0'
+                        )
+                      "
+                    >
+                      <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+                    </TableCell>
+                  </TableRow>
+                  <TableRow v-if="row.getIsExpanded()">
+                    <TableCell :colspan="row.getAllCells().length">
+                      {{ JSON.stringify(row.original) }}
+                    </TableCell>
+                  </TableRow>
+                </template>
+              </template>
+
+              <TableRow v-else>
+                <TableCell :colspan="columns.length" class="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
 
-        <Button @click.prevent="modalCreateOpen = true" class="max-w-sm">
-          <PlusCircle /> Create Department
-        </Button>
-      </header>
-
-      <main>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead class="font-medium">Department</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Employee Count</TableHead>
-              <TableHead>Created at</TableHead>
-              <TableHead> Action </TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <!-- jika users belum diload -->
-          <TableBody v-if="!departments">
-            <TableRow v-for="n in 5" :key="n">
-              <TableCell><Skeleton class="h-5 w-32" /></TableCell>
-              <TableCell><Skeleton class="h-5 w-52" /></TableCell>
-              <TableCell><Skeleton class="h-5 w-20" /></TableCell>
-              <TableCell><Skeleton class="h-5 w-20" /></TableCell>
-              <TableCell><Skeleton class="h-5 w-28" /></TableCell>
-            </TableRow>
-          </TableBody>
-
-          <TableBody>
-            <TableRow v-for="(department, index) in departments" :key="index">
-              <TableCell class="font-medium"> {{ department.name }} </TableCell>
-              <TableCell>{{ department.description }}</TableCell>
-              <TableCell>{{ department.count }}</TableCell>
-              <TableCell>{{ department.created_at }}</TableCell>
-              <TableCell>
-                <div class="flex gap-2">
-                  <Button size="sm" @click.prevent="fillModal(department)"><Edit /></Button>
-                  <Button
-                    @click.prevent="deleteDepartment(department.id)"
-                    size="sm"
-                    variant="destructive"
-                    :disabled="buttonDisabled"
-                    ><Trash
-                  /></Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+        <div class="flex items-center justify-end space-x-2 py-4">
+          <div class="flex-1 text-sm text-muted-foreground">
+            {{ table.getFilteredSelectedRowModel().rows.length }} of
+            {{ table.getFilteredRowModel().rows.length }} row(s) selected.
+          </div>
+          <div class="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="!table.getCanPreviousPage()"
+              @click="table.previousPage()"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="!table.getCanNextPage()"
+              @click="table.nextPage()"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </main>
     </section>
 
