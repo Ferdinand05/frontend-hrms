@@ -8,6 +8,18 @@ import axios from "axios";
 import Input from "@/components/ui/input/Input.vue";
 import Label from "@/components/ui/label/Label.vue";
 import { watch } from "vue";
+import AreaChart from "@/components/ui/chart-area/AreaChart.vue";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import type { Leave } from "@/types/leave";
+import Badge from "@/components/ui/badge/Badge.vue";
 
 const breadcrumbItem: breadcrumbItem[] = [
   {
@@ -16,6 +28,12 @@ const breadcrumbItem: breadcrumbItem[] = [
   },
 ];
 const authStore = useAuthStore();
+
+interface LeaveChartData {
+  name: string; // Nama bulan, misal "Jan"
+  total: number; // Total semua leave per bulan
+  rejected: number; // Total leave dengan status rejected
+}
 
 const data = ref<{
   totalEmployee: number;
@@ -26,6 +44,8 @@ const data = ref<{
   totalThisMonthAttendance: number;
   totalAttendanceLateThisMonth: number;
   totalUsers: number;
+  latestPendingLeaves: Leave[];
+  dataChart: LeaveChartData[];
 }>();
 
 const month = ref<string>("");
@@ -111,15 +131,42 @@ watch(month, () => {
       </div>
       <!-- Second Tier - Charts/Tables Container -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow">
-          <h3 class="text-lg font-semibold mb-4">Chart Section 1</h3>
+        <div class="bg-white p-2 rounded-lg shadow">
+          <h3 class="text-lg p-4 font-semibold mb-4">Leaves Monthly</h3>
           <!-- Add your chart component here -->
-          <div class="h-64">Chart placeholder</div>
+          <div class="w-full h-full">
+            <AreaChart
+              :data="data?.dataChart ?? []"
+              index="name"
+              :colors="['black', 'red']"
+              :categories="['total', 'rejected']"
+            ></AreaChart>
+          </div>
         </div>
         <div class="bg-white p-6 rounded-lg shadow">
-          <h3 class="text-lg font-semibold mb-4">Table Section</h3>
+          <h3 class="text-lg font-semibold mb-4">Pending Leaves</h3>
           <!-- Add your table component here -->
-          <div class="h-64">Table placeholder</div>
+          <Table>
+            <TableCaption>A list of your recent Pending leaves.</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead> Status </TableHead>
+                <TableHead> Employee </TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Reason</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="(leave, index) in data?.latestPendingLeaves" :key="index">
+                <TableCell class="capitalize">
+                  <Badge>{{ leave.status }}</Badge>
+                </TableCell>
+                <TableCell class="capitalize"> {{ leave.employee?.full_name }} </TableCell>
+                <TableCell class="capitalize"> {{ leave.leave_type }} </TableCell>
+                <TableCell> {{ leave.reason }} </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </section>
