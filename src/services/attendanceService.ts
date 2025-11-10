@@ -43,3 +43,25 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   const distance = R * c;
   return distance; // hasil dalam meter
 }
+
+// Helper: convert image URL ke base64
+export function toBase64(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // penting kalau beda domain
+    img.src = url;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg"));
+      } else {
+        reject("Canvas context error");
+      }
+    };
+    img.onerror = reject;
+  });
+}

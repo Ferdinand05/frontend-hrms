@@ -40,7 +40,6 @@ function getDetailUser() {
     .then((response) => {
       console.log(response.data.user);
       const user = response.data.user;
-      name.value = user.name;
       email.value = user.email;
       selectedEmployee.value = user.employee.id;
       selectedRole.value = user.role_id;
@@ -93,7 +92,6 @@ const formErrors = ref<Record<string, string[]> | null>(null);
 const buttonDisabled = ref(false);
 const authStore = useAuthStore();
 const user_id = router.currentRoute.value.params.id;
-const name = ref("");
 const email = ref("");
 const password = ref("");
 const password_confirmation = ref("");
@@ -105,7 +103,6 @@ function updateUser() {
   formErrors.value = null;
 
   const payload = {
-    name: name.value,
     email: email.value,
     password: password.value,
     password_confirmation: password_confirmation.value,
@@ -150,8 +147,23 @@ function updateUser() {
     <section class="max-w-xl" v-if="roles && employees">
       <form autofocus="true" autocomplete="off" @submit.prevent="updateUser">
         <div class="grid gap-2 py-2">
-          <Label for="name">Name</Label>
-          <Input id="name" autocomplete="off" v-model="name" />
+          <Label for="employee">Employee</Label>
+          <Select v-model="selectedEmployee" id="employee" name="employee">
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="Which employee are you ?" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  v-for="(employee, index) in employees"
+                  :key="index"
+                  :value="employee.id"
+                >
+                  {{ employee.full_name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div class="grid gap-2 py-2">
           <Label for="email">Email</Label>
@@ -177,25 +189,7 @@ function updateUser() {
             name="password_confirmation"
           />
         </div>
-        <div class="grid gap-2 py-2">
-          <Label for="employee">Employee</Label>
-          <Select v-model="selectedEmployee" id="employee" name="employee">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="Which employee are you ?" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem
-                  v-for="(employee, index) in employees"
-                  :key="index"
-                  :value="employee.id"
-                >
-                  {{ employee.full_name }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
+
         <div class="grid gap-2 py-2">
           <Label for="role">Role</Label>
           <Select id="role" name="role" v-model="selectedRole">
