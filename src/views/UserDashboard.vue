@@ -55,7 +55,7 @@ const navItem = [
         </div>
       </nav>
       <!-- content -->
-      <div class="mt-3 md:mt-4 py-4 w-full md:max-w-2xl">
+      <div class="mt-3 md:mt-4 py-4 w-full md:max-w-3xl">
         <main>
           <slot />
         </main>
