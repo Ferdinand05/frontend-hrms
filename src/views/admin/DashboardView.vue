@@ -45,6 +45,8 @@ const data = ref<{
   totalAttendanceLateThisMonth: number;
   totalUsers: number;
   latestPendingLeaves: Leave[];
+  employeeHasAttendToday: number;
+  employeeLateToday: number;
   dataChart: LeaveChartData[];
 }>();
 
@@ -131,6 +133,34 @@ watch(month, () => {
       </div>
       <!-- Second Tier - Charts/Tables Container -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-2 rounded-lg shadow h-full min-h-0">
+          <h3 class="text-lg p-4 font-semibold mb-4">Today's Attendance</h3>
+          <!-- Add your chart component here -->
+          <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 px-4 justify-center" v-if="data">
+            <div
+              class="shadow border rounded-md space-y-3 max-h-28 overflow-auto px-4 py-4 flex items-center justify-center flex-col"
+            >
+              <h1 class="font-semibold">Total Attendance</h1>
+              <div class="text-center text-lg">
+                {{ data?.employeeHasAttendToday }} / {{ data?.totalEmployee }}
+              </div>
+            </div>
+            <div
+              class="shadow border rounded-md space-y-3 max-h-28 overflow-auto px-4 py-4 flex items-center justify-center flex-col"
+            >
+              <h1 class="font-semibold">Employee Late</h1>
+              <div class="text-center text-lg">{{ data?.employeeLateToday }}</div>
+            </div>
+            <div
+              class="shadow border rounded-md space-y-3 max-h-28 overflow-auto px-4 py-4 flex items-center justify-center flex-col"
+            >
+              <h1 class="font-medium">Employee On Time</h1>
+              <div class="text-center text-lg">
+                {{ (data?.employeeHasAttendToday ?? 0) - (data?.employeeLateToday ?? 0) }}
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="bg-white p-2 rounded-lg shadow">
           <h3 class="text-lg p-4 font-semibold mb-4">Leaves Monthly</h3>
           <!-- Add your chart component here -->
