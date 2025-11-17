@@ -48,6 +48,7 @@ import Swal from "sweetalert2";
 import DatePicker from "@/components/attendance/DatePicker.vue";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import ButtonGroup from "@/components/ui/button-group/ButtonGroup.vue";
 
 const breadcrumbs: breadcrumbItem[] = [
   {
@@ -484,6 +485,43 @@ function printAttendances() {
     doc.save(`attendances-report.pdf`);
   }
 }
+
+// filter data by today, this month and all
+function getTodayAttendances() {
+  axios
+    .get(`${authStore.apiUrl}/attendances`, {
+      headers: {
+        Authorization: `Bearer ${authStore.getToken}`,
+      },
+      params: {
+        filter: "today",
+      },
+    })
+    .then((response) => {
+      attendances.value = response.data.attendances;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
+function getThisMonthAttendances() {
+  axios
+    .get(`${authStore.apiUrl}/attendances`, {
+      headers: {
+        Authorization: `Bearer ${authStore.getToken}`,
+      },
+      params: {
+        filter: "this_month",
+      },
+    })
+    .then((response) => {
+      attendances.value = response.data.attendances;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
 </script>
 
 <template>
@@ -494,7 +532,13 @@ function printAttendances() {
   >
     <main class="w-full">
       <!-- date filter -->
-      <div class="flex justify-end">
+
+      <div class="flex justify-between gap-2">
+        <ButtonGroup>
+          <Button variant="outline" @click.prevent="getTodayAttendances"> Today </Button>
+          <Button variant="outline" @click.prevent="getThisMonthAttendances"> This Month </Button>
+          <Button variant="outline" @click.prevent="getAttendances"> All </Button>
+        </ButtonGroup>
         <DatePicker :buttonStatus="buttonFilter" @updateDate="filterByDate"></DatePicker>
       </div>
       <div class="flex flex-col-reverse md:flex-row gap-2 items-center py-4">
@@ -716,7 +760,7 @@ function printAttendances() {
             <Input type="datetime" v-model="editClockOut" />
           </div>
           <div class="space-y-2">
-            <Label>Check Out</Label>
+            <Label>Status</Label>
             <Select v-model="editStatus">
               <SelectTrigger class="w-full">
                 <SelectValue placeholder="Select a status" />

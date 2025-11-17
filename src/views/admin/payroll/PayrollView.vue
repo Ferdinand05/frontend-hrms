@@ -390,6 +390,7 @@ function updatePayroll() {
 
 // SECTION Selection
 function selectionSetPaid() {
+  console.log(rowSelection.value);
   Swal.fire({
     title: "Are you sure?",
     text: "You won't be able to revert this!",
@@ -417,7 +418,7 @@ function selectionSetPaid() {
           Swal.fire({
             title: "Processing!",
             html: "I will close in <b></b> milliseconds.",
-            timer: 3000,
+            timer: 4000,
             timerProgressBar: true,
             didOpen: () => {
               Swal.showLoading();
@@ -427,7 +428,7 @@ function selectionSetPaid() {
                 if (timer) {
                   timer.textContent = `${Swal.getTimerLeft()}`;
                 }
-              }, 300);
+              }, 350);
             },
             willClose: () => {
               clearInterval(timerInterval);
@@ -437,6 +438,8 @@ function selectionSetPaid() {
             if (result.dismiss === Swal.DismissReason.timer) {
               console.log("I was closed by the timer");
               getPayrolls();
+
+              rowSelection.value = [];
               Swal.fire({
                 title: "Paid!",
                 text: `${response.data.message}`,
@@ -481,7 +484,7 @@ function bulkDelete() {
           Swal.fire({
             title: "Processing!",
             html: "I will close in <b></b> milliseconds.",
-            timer: 3000,
+            timer: 4000,
             timerProgressBar: true,
             didOpen: () => {
               Swal.showLoading();
@@ -491,7 +494,7 @@ function bulkDelete() {
                 if (timer) {
                   timer.textContent = `${Swal.getTimerLeft()}`;
                 }
-              }, 300);
+              }, 350);
             },
             willClose: () => {
               clearInterval(timerInterval);
@@ -501,6 +504,9 @@ function bulkDelete() {
             if (result.dismiss === Swal.DismissReason.timer) {
               console.log("I was closed by the timer");
               getPayrolls();
+
+              rowSelection.value = [];
+
               Swal.fire({
                 title: "Deleted!",
                 text: `${response.data.message}`,
@@ -566,7 +572,7 @@ function generateAllEmployeePayroll() {
           Swal.fire({
             title: "Processing!",
             html: "I will close in <b></b> milliseconds.",
-            timer: 3000,
+            timer: 4500,
             timerProgressBar: true,
             didOpen: () => {
               Swal.showLoading();
@@ -576,7 +582,7 @@ function generateAllEmployeePayroll() {
                 if (timer) {
                   timer.textContent = `${Swal.getTimerLeft()}`;
                 }
-              }, 300);
+              }, 350);
             },
             willClose: () => {
               clearInterval(timerInterval);
@@ -731,18 +737,18 @@ function exportPayrolls() {
                 <DropdownMenuContent class="w-56">
                   <DropdownMenuLabel>Set Status for selected row</DropdownMenuLabel>
                   <DropdownMenuCheckboxItem
-                    class="hover:cursor-pointer"
-                    @click.prevent="selectionSetPaid()"
+                    class="hover:cursor-pointer flex items-center justify-center w-full"
                   >
-                    <Badge>Paid</Badge>
+                    <Button @click.prevent="selectionSetPaid()" class="w-full">
+                      <Badge>Paid</Badge>
+                    </Button>
                   </DropdownMenuCheckboxItem>
 
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem
-                    class="hover:cursor-pointer"
-                    @click.prevent="bulkDelete()"
+                    class="hover:cursor-pointer flex items-center justify-center w-full"
                   >
-                    <Button variant="ghost" class="">
+                    <Button variant="ghost" @click.prevent="bulkDelete()" class="w-full">
                       <Trash class="mr-2 h-4 w-4" /> Delete Selection
                     </Button>
                   </DropdownMenuCheckboxItem>
